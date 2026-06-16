@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <!-- sem Referer: necessário para a locução pt-BR (Google TTS bloqueia requisições com Referer) -->
+  <meta name="referrer" content="no-referrer" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0f14" />
+  <title>Bingo dos Coadjuvantes — O melhor bingo online</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <!-- favicon: cartela de bingo (não é bola 8) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='12' y='12' width='76' height='76' rx='16' fill='%230e1722' stroke='%232dd4a0' stroke-width='5'/><circle cx='32' cy='32' r='8' fill='%233a8bff'/><circle cx='50' cy='50' r='8' fill='%23e7b94a'/><circle cx='68' cy='68' r='8' fill='%232dd4a0'/><circle cx='68' cy='32' r='8' fill='%23ef5757'/><circle cx='32' cy='68' r='8' fill='%23b06bff'/></svg>" />
+</head>
+<body>
+  <!-- fundo animado -->
+  <div class="bg-orbs">
+    <span class="orb o1"></span><span class="orb o2"></span>
+    <span class="orb o3"></span><span class="orb o4"></span>
+    <span class="orb o5"></span>
+  </div>
+
+  <!-- barra superior de controles globais -->
+  <header class="topbar">
+    <div class="brand" id="brand-home">
+      <span class="brand-ball" aria-hidden="true">
+        <svg viewBox="0 0 100 100" width="30" height="30">
+          <rect x="12" y="12" width="76" height="76" rx="16" fill="#0e1722" stroke="#2dd4a0" stroke-width="5"/>
+          <circle cx="32" cy="32" r="8" fill="#3a8bff"/>
+          <circle cx="50" cy="50" r="8" fill="#e7b94a"/>
+          <circle cx="68" cy="68" r="8" fill="#2dd4a0"/>
+          <circle cx="68" cy="32" r="8" fill="#ef5757"/>
+          <circle cx="32" cy="68" r="8" fill="#b06bff"/>
+        </svg>
+      </span>
+      <span class="brand-text">Bingo dos <b>Coadjuvantes</b></span>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="btn-voice" title="Locução dos números">🗣️</button>
+      <button class="icon-btn" id="btn-music" title="Música ambiente">🎵</button>
+      <button class="icon-btn" id="btn-sfx" title="Efeitos sonoros">🔊</button>
+    </div>
+  </header>
+
+  <main id="app">
+
+    <!-- ====================== TELA: CONFIGURAÇÃO NÃO FEITA ====================== -->
+    <section class="screen" id="screen-setup" hidden>
+      <div class="card-panel narrow">
+        <h1 class="title">⚙️ Falta conectar o Supabase</h1>
+        <p class="muted">
+          Abra o arquivo <code>js/config.js</code> e cole a <b>URL</b> e a
+          <b>anon key</b> do seu projeto Supabase. Depois rode o
+          <code>sql/schema.sql</code> no SQL Editor.
+        </p>
+        <ol class="steps">
+          <li>Crie um projeto em <b>supabase.com</b></li>
+          <li>Project Settings → API → copie <b>Project URL</b> e <b>anon public</b></li>
+          <li>Cole em <code>js/config.js</code></li>
+          <li>SQL Editor → cole <code>sql/schema.sql</code> → Run</li>
+          <li>Recarregue esta página 🎉</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ====================== TELA: INÍCIO ====================== -->
+    <section class="screen active" id="screen-home">
+      <div class="hero">
+        <div class="hero-balls" aria-hidden="true">
+          <span class="float-ball b">B</span>
+          <span class="float-ball i">I</span>
+          <span class="float-ball n">N</span>
+          <span class="float-ball g">G</span>
+          <span class="float-ball o">O</span>
+        </div>
+        <h1 class="hero-title">O melhor <span class="grad">Bingo</span> do mundo</h1>
+        <p class="hero-sub">Crie uma sala, convide pelo link e jogue ao vivo com
+          jogadores ilimitados e quantas cartelas quiser. 🎊</p>
+
+        <div class="home-actions">
+          <button class="btn big primary" id="btn-go-create">
+            <span class="btn-emoji">✨</span> Criar Sala
+          </button>
+          <button class="btn big ghost" id="btn-go-join">
+            <span class="btn-emoji">🚪</span> Entrar com Código
+          </button>
+        </div>
+
+      </div>
+
+      <!-- vitrine de padrões de vitória -->
+      <div class="patterns-showcase">
+        <h2 class="section-title">🏆 Formas de Ganhar</h2>
+        <div class="pattern-grid" id="pattern-showcase"></div>
+      </div>
+    </section>
+
+    <!-- ====================== TELA: CRIAR SALA ====================== -->
+    <section class="screen" id="screen-create" hidden>
+      <div class="card-panel">
+        <button class="back-link" data-go="home">← Voltar</button>
+        <h1 class="title">✨ Criar nova sala</h1>
+
+        <label class="field">
+          <span>Seu nome</span>
+          <div class="avatar-row">
+            <button class="avatar-pick" id="create-avatar" type="button">🎉</button>
+            <input id="create-host-name" type="text" maxlength="20" placeholder="Como te chamam?" />
+          </div>
+        </label>
+
+        <label class="field">
+          <span>Nome da sala</span>
+          <input id="create-room-name" type="text" maxlength="30" placeholder="Bingo da Galera" />
+        </label>
+
+        <label class="field">
+          <span>Cartelas por jogador: <b id="cards-val">1</b></span>
+          <input id="create-cards" type="range" min="1" max="50" value="1" />
+          <small class="muted">Cada jogador joga com essa quantidade de cartelas (1 a 50).</small>
+        </label>
+
+        <div class="field">
+          <span>🏆 Formas de ganhar (em sequência)</span>
+          <p class="muted">Todos os padrões valem nesta sala! Assim que sua cartela
+          completar um padrão, ele é marcado e você parte para o próximo — do mais
+          fácil (linha) até a cartela cheia. Cada padrão só pode ser ganho uma vez por cartela.</p>
+        </div>
+
+        <div class="field">
+          <span>Sorteio</span>
+          <div class="toggle-row">
+            <label class="switch">
+              <input type="checkbox" id="create-autodraw" />
+              <span class="slider"></span>
+            </label>
+            <span>Sorteio automático</span>
+          </div>
+          <div class="inline-range" id="interval-wrap" hidden>
+            <span>A cada <b id="interval-val">5</b>s</span>
+            <input id="create-interval" type="range" min="2" max="15" value="5" />
+          </div>
+        </div>
+
+        <button class="btn big primary full" id="btn-create-room">🎈 Criar sala e entrar</button>
+      </div>
+    </section>
+
+    <!-- ====================== TELA: ENTRAR ====================== -->
+    <section class="screen" id="screen-join" hidden>
+      <div class="card-panel narrow">
+        <button class="back-link" data-go="home">← Voltar</button>
+        <h1 class="title">🚪 Entrar numa sala</h1>
+
+        <label class="field">
+          <span>Seu nome</span>
+          <div class="avatar-row">
+            <button class="avatar-pick" id="join-avatar" type="button">🎈</button>
+            <input id="join-name" type="text" maxlength="20" placeholder="Como te chamam?" />
+          </div>
+        </label>
+
+        <label class="field">
+          <span>Código da sala</span>
+          <input id="join-code" type="text" maxlength="12" placeholder="Ex: BINGO-7K2A" class="code-input" />
+        </label>
+
+        <button class="btn big primary full" id="btn-join-room">🎯 Entrar</button>
+        <p class="muted center" id="join-error"></p>
+      </div>
+    </section>
+
+    <!-- ====================== TELA: LOBBY ====================== -->
+    <section class="screen" id="screen-lobby" hidden>
+      <div class="lobby">
+        <div class="card-panel">
+          <h1 class="title" id="lobby-room-name">Sala</h1>
+          <div class="invite-box">
+            <div class="invite-code">
+              <small>Código</small>
+              <strong id="lobby-code">—</strong>
+            </div>
+            <button class="btn" id="btn-copy-code">📋 Copiar código</button>
+            <button class="btn" id="btn-copy-link">🔗 Copiar link</button>
+          </div>
+
+          <div class="lobby-info">
+            <div class="pill">🎴 <b id="lobby-cards">1</b> cartela(s)/jogador</div>
+            <div class="pill">🏆 <span id="lobby-pattern">Linha</span></div>
+            <div class="pill" id="lobby-autodraw-pill">⏱️ Manual</div>
+          </div>
+
+          <h2 class="section-title">👥 Jogadores (<span id="lobby-count">0</span>)</h2>
+          <div class="players-list" id="lobby-players"></div>
+
+          <div class="lobby-actions">
+            <button class="btn big primary full" id="btn-start-game" hidden>🚀 Começar o Bingo!</button>
+            <p class="muted center" id="lobby-wait">Aguardando o anfitrião começar…</p>
+            <button class="btn ghost" id="btn-leave-lobby">Sair da sala</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================== TELA: JOGO ====================== -->
+    <section class="screen game" id="screen-game" hidden>
+      <!-- coluna do sorteio -->
+      <aside class="game-side">
+        <div class="current-ball-wrap">
+          <div class="current-ball" id="current-ball">
+            <span class="cb-letter" id="cb-letter">–</span>
+            <span class="cb-number" id="cb-number">--</span>
+          </div>
+          <div class="draw-timer-wrap" id="draw-timer-wrap" hidden>
+            <div class="draw-timer" id="draw-timer"><span class="dt-inner" id="dt-secs">5</span></div>
+            <span class="dt-label">próximo número</span>
+          </div>
+          <div class="last-draws" id="last-draws"></div>
+        </div>
+
+        <div class="goal-box">
+          <small>🏆 Complete todos os padrões (em sequência)</small>
+          <div class="seq-list" id="seq-list"></div>
+        </div>
+
+        <!-- controles do anfitrião -->
+        <div class="host-controls" id="host-controls" hidden>
+          <h3>🎛️ Controles do anfitrião</h3>
+          <button class="btn big primary full" id="btn-draw">🎲 Sortear número</button>
+          <div class="toggle-row">
+            <label class="switch">
+              <input type="checkbox" id="game-autodraw" />
+              <span class="slider"></span>
+            </label>
+            <span>Automático (<b id="game-interval-val">5</b>s)</span>
+          </div>
+          <input id="game-interval" type="range" min="2" max="15" value="5" />
+          <button class="btn ghost full" id="btn-new-round">🔄 Nova rodada</button>
+        </div>
+
+        <div class="drawn-board">
+          <h3>Números sorteados (<span id="drawn-count">0</span>/<span id="drawn-max">75</span>)</h3>
+          <div class="board-grid" id="board-grid"></div>
+        </div>
+      </aside>
+
+      <!-- área das cartelas -->
+      <section class="game-main">
+        <div class="game-topline">
+          <div class="pill" id="game-room-pill">Sala</div>
+          <div class="pill" id="game-players-pill">👥 0</div>
+          <button class="btn ghost small" id="btn-leave-game">Sair</button>
+        </div>
+
+        <div class="bingo-btn-wrap">
+          <button class="bingo-button" id="btn-bingo">
+            <span>BINGO!</span>
+          </button>
+          <p class="muted center" id="bingo-hint"></p>
+        </div>
+
+        <div class="cards-area" id="cards-area"></div>
+      </section>
+
+      <!-- placar de vencedores -->
+      <aside class="winners-side">
+        <h3>🏅 Vencedores</h3>
+        <div class="winners-list" id="winners-list">
+          <p class="muted">Ninguém bateu ainda…</p>
+        </div>
+      </aside>
+    </section>
+
+  </main>
+
+  <!-- ====================== OVERLAYS ====================== -->
+  <!-- contagem regressiva -->
+  <div class="overlay" id="overlay-countdown" hidden>
+    <div class="countdown-num" id="countdown-num">3</div>
+  </div>
+
+  <!-- vitória -->
+  <div class="overlay" id="overlay-win" hidden>
+    <div class="win-card">
+      <div class="win-emoji">🏆</div>
+      <h1 id="win-title">BINGO!</h1>
+      <p id="win-sub">Você ganhou!</p>
+      <button class="btn big primary" id="btn-win-close">Continuar jogando 🎉</button>
+    </div>
+  </div>
+
+  <!-- aviso de bingo de outro jogador -->
+  <div class="toast-wrap" id="toast-wrap"></div>
+
+  <!-- seletor de avatar -->
+  <div class="overlay" id="overlay-avatars" hidden>
+    <div class="avatar-panel">
+      <h3>Escolha seu avatar</h3>
+      <div class="avatar-grid" id="avatar-grid"></div>
+      <button class="btn ghost" id="btn-close-avatars">Fechar</button>
+    </div>
+  </div>
+
+  <!-- scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/bingo.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/confetti.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
