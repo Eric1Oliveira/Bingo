@@ -32,6 +32,7 @@ create table if not exists rooms (
   current_number   int,                                  -- último número sorteado
   auto_draw        boolean not null default false,       -- sorteio automático ligado?
   draw_interval    int  not null default 5,              -- segundos entre sorteios automáticos
+  show_drawn       boolean not null default true,        -- mostrar painel de números já sorteados?
   allow_late_join  boolean not null default true,        -- pode entrar com jogo em andamento?
   winners_count    int  not null default 0,              -- quantos já bateram bingo
   created_at       timestamptz not null default now(),
@@ -39,6 +40,9 @@ create table if not exists rooms (
 );
 
 create index if not exists rooms_code_idx on rooms (code);
+
+-- garante a coluna em bancos já criados antes desta opção existir
+alter table rooms add column if not exists show_drawn boolean not null default true;
 
 -- ----------------------------------------------------------------------------
 -- TABELA: players  (jogadores dentro de uma sala)

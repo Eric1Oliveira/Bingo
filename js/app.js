@@ -24,6 +24,7 @@
     channel: null,       // canal realtime
     poller: null,        // intervalo de polling (rede de segurança do tempo real)
     autoDrawTimer: null,
+    autoDrawInterval: 5,   // intervalo (s) com que o timer automático está rodando
     lastDrawAt: 0,         // timestamp do último número (para o reloginho)
     timerRAF: null,        // loop de animação do reloginho
   };
@@ -240,9 +241,16 @@
     $("#btn-win-close").addEventListener("click", () => ($("#overlay-win").hidden = true));
 
     $("#game-autodraw").addEventListener("change", toggleAutoDraw);
+    // arrastando: só atualiza o rótulo. Ao soltar: grava e aplica o novo tempo.
     $("#game-interval").addEventListener("input", (e) => {
       $("#game-interval-val").textContent = e.target.value;
-      if (state.room && amHost()) updateRoom({ draw_interval: +e.target.value });
+    });
+    $("#game-interval").addEventListener("change", (e) => {
+      if (!state.room || !amHost()) return;
+      const val = +e.target.value;
+      state.room.draw_interval = val;     // aplica já localmente (sem esperar o eco)
+      updateRoom({ draw_interval: val }); // propaga para todos
+      syncAutoDrawUI();                   // reinicia o timer com o novo intervalo
     });
 
     window.addEventListener("beforeunload", () => { try { leaveRoomSilent(); } catch (e) {} });
@@ -281,6 +289,7 @@
     const cards = +$("#create-cards").value;
     const autoDraw = $("#create-autodraw").checked;
     const interval = +$("#create-interval").value;
+    const showDrawn = $("#create-showdrawn").checked;
 
     state.name = name;
     localStorage.setItem("bingo_name", name);
@@ -292,17 +301,28 @@
     btn.disabled = true; btn.textContent = "Criando…";
 
     try {
-      let code, created, attempts = 0;
+      let created, attempts = 0;
+      const payload = {
+        name: roomName, host_id: state.clientId,
+        cards_per_player: cards, max_number: cfg.MAX_NUMBER || 75,
+        pattern: "sequence", auto_draw: autoDraw, draw_interval: interval,
+        show_drawn: showDrawn, status: "waiting",
+      };
       do {
-        code = genRoomCode();
-        const res = await supa.from("rooms").insert({
-          code, name: roomName, host_id: state.clientId,
-          cards_per_player: cards, max_number: cfg.MAX_NUMBER || 75,
-          pattern: "sequence", auto_draw: autoDraw,
-          draw_interval: interval, status: "waiting",
-        }).select().single();
+        payload.code = genRoomCode();
+        const res = await supa.from("rooms").insert(payload).select().single();
         created = res.data;
-        if (res.error && res.error.code !== "23505") throw res.error; // 23505 = code duplicado
+        if (res.error) {
+          const e = res.error;
+          if (e.code === "23505") { attempts++; continue; } // código duplicado → tenta outro
+          // coluna show_drawn ainda não existe no banco (migração não rodada) → cria sem ela
+          if ("show_drawn" in payload &&
+              (e.code === "42703" || e.code === "PGRST204" || /show_drawn/i.test(e.message || ""))) {
+            delete payload.show_drawn;
+            continue; // tenta de novo sem a coluna (sem contar tentativa)
+          }
+          throw e;
+        }
         attempts++;
       } while (!created && attempts < 5);
 
@@ -524,6 +544,7 @@
     $("#lobby-pattern").textContent = "Todos (sequência)";
     $("#lobby-autodraw-pill").textContent = state.room.auto_draw
       ? `⏱️ Auto ${state.room.draw_interval}s` : "⏱️ Manual";
+    $("#lobby-hidemode-pill").hidden = state.room.show_drawn !== false ? true : false;
     renderPlayers();
     updateLobbyHostUI();
   }
@@ -635,6 +656,7 @@
     renderLastDraws();
     renderWinners();
     updateGameChrome();
+    applyShowDrawn();
 
     // controles do host
     const host = amHost();
@@ -662,6 +684,16 @@
     if ($("#game-players-pill")) $("#game-players-pill").textContent = "👥 " + state.players.length;
     if ($("#drawn-count")) $("#drawn-count").textContent = state.room.drawn_numbers.length;
     if ($("#drawn-max")) $("#drawn-max").textContent = state.room.max_number;
+  }
+
+  // mostra/esconde o painel de números já sorteados (e os últimos sorteados),
+  // conforme a opção escolhida na criação da sala. A bola atual continua visível.
+  function applyShowDrawn() {
+    const show = !state.room || state.room.show_drawn !== false;
+    const board = document.querySelector(".drawn-board");
+    if (board) board.hidden = !show;
+    const last = $("#last-draws");
+    if (last) last.style.display = show ? "" : "none";
   }
 
   // tabuleiro de números sorteados
@@ -995,11 +1027,11 @@
   function startAutoDraw() {
     stopAutoDraw();
     state.lastDrawAt = Date.now();
-    const interval = (state.room.draw_interval || 5) * 1000;
+    state.autoDrawInterval = state.room.draw_interval || 5; // intervalo em uso pelo timer
     state.autoDrawTimer = setInterval(() => {
       if (state.room.drawn_numbers.length >= state.room.max_number) { stopAutoDraw(); return; }
       drawNumber();
-    }, interval);
+    }, state.autoDrawInterval * 1000);
   }
 
   function stopAutoDraw() {
@@ -1009,10 +1041,14 @@
   // só o host roda o timer; todos refletem o estado visual
   function syncAutoDrawUI() {
     if ($("#game-autodraw")) $("#game-autodraw").checked = state.room.auto_draw;
-    if (amHost() && state.room.auto_draw && state.room.status === "playing" && !state.autoDrawTimer) {
+
+    const shouldRun = amHost() && state.room.auto_draw && state.room.status === "playing";
+    if (shouldRun && !state.autoDrawTimer) {
       startAutoDraw();
-    }
-    if ((!state.room.auto_draw || state.room.status !== "playing") && state.autoDrawTimer) {
+    } else if (shouldRun && state.autoDrawTimer && state.autoDrawInterval !== state.room.draw_interval) {
+      // o intervalo mudou no meio do jogo → recria o timer com o novo tempo
+      startAutoDraw();
+    } else if ((!state.room.auto_draw || state.room.status !== "playing") && state.autoDrawTimer) {
       stopAutoDraw();
     }
     refreshDrawTimerVisibility();

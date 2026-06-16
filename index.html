@@ -124,9 +124,9 @@
 
         <div class="field">
           <span>🏆 Formas de ganhar (em sequência)</span>
-          <p class="muted">Todos os padrões valem nesta sala! Assim que sua cartela
-          completar um padrão, ele é marcado e você parte para o próximo — do mais
-          fácil (linha) até a cartela cheia. Cada padrão só pode ser ganho uma vez por cartela.</p>
+          <p class="muted">Todos os padrões valem nesta sala! Assim que alguém
+          completar um padrão, ele sai do jogo para todos — do mais fácil (linha)
+          até a cartela cheia. Cada padrão só pode ser ganho uma vez por sala.</p>
         </div>
 
         <div class="field">
@@ -142,6 +142,19 @@
             <span>A cada <b id="interval-val">5</b>s</span>
             <input id="create-interval" type="range" min="2" max="15" value="5" />
           </div>
+        </div>
+
+        <div class="field">
+          <span>Números já sorteados</span>
+          <div class="toggle-row">
+            <label class="switch">
+              <input type="checkbox" id="create-showdrawn" checked />
+              <span class="slider"></span>
+            </label>
+            <span>Mostrar o painel de números já sorteados</span>
+          </div>
+          <small class="muted">Desligue para um modo mais difícil: os jogadores
+          precisam acompanhar de cabeça, sem ver a lista do que já saiu.</small>
         </div>
 
         <button class="btn big primary full" id="btn-create-room">🎈 Criar sala e entrar</button>
@@ -190,6 +203,7 @@
             <div class="pill">🎴 <b id="lobby-cards">1</b> cartela(s)/jogador</div>
             <div class="pill">🏆 <span id="lobby-pattern">Linha</span></div>
             <div class="pill" id="lobby-autodraw-pill">⏱️ Manual</div>
+            <div class="pill" id="lobby-hidemode-pill" hidden>🙈 Sem painel de sorteados</div>
           </div>
 
           <h2 class="section-title">👥 Jogadores (<span id="lobby-count">0</span>)</h2>
